@@ -32,26 +32,51 @@ window.controls = controls;
 // ];
 
 const audioFiles8 = ['T1', 'T2', 'T3', 'T4', 'B5', 'B6', 'B7', 'B8'];
+
+let NYTRDRemote = '20210920_DixieFire_ATMOS_V5_mach1';
+let extension = 'm4a';
+
 const getAudioFiles = (files) => {
   const path = 'audio/m1spatial';
 
   // NOTE: The new iPad now mimic to Mac OMG
   const isModernIPad = (/MacIntel/.test(navigator.platform) && 'ontouchend' in document);
-  const extention = /iPhone|iPad|iPod/i.test(navigator.userAgent) || isModernIPad ? 'mp3' : 'ogg';
+  const extention = /iPhone|iPad|iPod/i.test(navigator.userAgent) || isModernIPad ? 'm4a' : 'm4a';
 
   return files.map((file) => `${path}/${file}.${extention}`);
 };
 
-const Player = new Mach1SoundPlayer(getAudioFiles(audioFiles8));
+const getAudioFilesNYT = (name, extension) => {
+  const path = `https://storage.googleapis.com/rd-big-files/Spatial-Audio/${name}`;
+
+  return [...Array(8).keys()].map((channel) => `${path}/${name}_${channel + 1}.${extension}`);
+};
+//const Player = new Mach1SoundPlayer(getAudioFiles(audioFilesNYTRD));
+
+const queryParams = new URLSearchParams(document.location.search);
+
+if (queryParams.get('url')) {
+  const url = [queryParams.get('url')];
+  document.querySelector('audio').src = url;
+}
+
+//const Player = new Mach1SoundPlayer(url ?? getAudioFilesNYT(NYTRDRemote, extension));
+const Player = new Mach1AudioPlayer(document.querySelector('audio'));
+
+console.log("Player created");
+
 const DecodeModule = new Mach1DecodeModule();
 const osc = new OSC();
 
-tf.setBackend('webgl');
+if (typeof tf != 'undefined') {
+  tf.setBackend('webgl');
+}
 
 function radiansToDegrees(radians) {
   return radians * (180 / Math.PI);
 }
 
+/*
 const boseARDeviceElement = document.querySelector('bose-ar-device');
 const boseAROrder = 'YXZ';
 const boseARConfig = {
@@ -96,7 +121,7 @@ boseARDeviceElement.addEventListener('rotation', (event) => {
     window.pitch = pitch;
     window.roll = roll;
   }
-});
+});*/
 
 const getModeElement = (name) => {
   const element = document.getElementsByName('mode');
@@ -110,7 +135,7 @@ const getModeElement = (name) => {
 
 const gimbal = new Gimbal();
 
-function selectTracker() {
+async function selectTracker() {
   // NOTE: Clear all warning messages
   document.getElementById('warning').innerHTML = '';
 
@@ -153,11 +178,48 @@ function selectTracker() {
 
     gimbal.enable();
   }
+  
+  if (window.modeTracker == 'facetracker') {
+    if (!isSetupCamera) {
+      [isSetupCamera] = await Promise.all([
+       setupCamera(),
+        tf.ready(),
+      ]);
+      if (isSetupCamera) {
+        videoWidth = video.videoWidth;
+        videoHeight = video.videoHeight;
+        video.width = videoWidth;
+        video.height = videoHeight;
+
+        canvas = document.getElementById('output');
+        canvas.width = videoWidth;
+        canvas.height = videoHeight;
+
+        // NOTE: This takes the first element by CSS class
+        // and after some changes on the HTML page this code can be broken
+        // FIXME: Need to use getElementsById
+        const canvasContainer = document.querySelector('.canvas-wrapper');
+        canvasContainer.style = `width: ${videoWidth}px; height: ${videoHeight}px`;
+
+        ctx = canvas.getContext('2d');
+        ctx.translate(canvas.width, 0);
+        ctx.scale(-1, 1);
+        ctx.fillStyle = '#32EEDB';
+        ctx.strokeStyle = '#32EEDB';
+
+        // NOTE: iOS fix; should be start after build, load and resize events
+        video.play();
+
+        model = await facemesh.load({ maxFaces: 1 });
+        await renderPrediction();
+      }
+    }
+  }
 }
 
 function enableBoseAR() {
   const ele = document.getElementById('boseRate');
-  boseARDeviceElement.setAttribute('rotation', ele.options[ele.selectedIndex].value);
+  //boseARDeviceElement.setAttribute('rotation', ele.options[ele.selectedIndex].value);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -188,48 +250,49 @@ function isMobile() {
 }
 
 let model; let ctx; let videoWidth; let videoHeight; let video; let canvas;
+let isSetupCamera = false;
 
 const mobile = isMobile();
 
 async function setupCamera() {
-  video = document.getElementById('video');
+  return new Promise( async (resolve, reject) => {
+    video = document.getElementById('video');
 
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: false,
-      video: {
-        facingMode: 'user',
-        width: mobile ? undefined : 640,
-        height: mobile ? undefined : 480,
-      },
-    });
-    video.srcObject = stream;
-  } catch (e) {
-    const element = document.getElementById('warning');
-    let warningMessage = 'ERROR: UNABLE TO TRACK FACE!';
-    if (e.message.includes('denied')) {
-      warningMessage = `${warningMessage} WEBCAM PERMISSION DENIED!`;
-    } else if (e.message === 'Requested device not found' || e.message === 'The object can not be found here.') {
-      warningMessage = `${warningMessage} YOUR DEVICE DOESN'T HAVE CAMERA SUPPORT!`;
-    } else {
-      warningMessage = `${warningMessage} ${e.message}`;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          facingMode: 'user',
+          width: mobile ? undefined : 640,
+          height: mobile ? undefined : 480,
+        },
+      });
+      video.srcObject = stream;
+    } catch (e) {
+      const element = document.getElementById('warning');
+      let warningMessage = 'ERROR: UNABLE TO TRACK FACE!';
+      if (e.message.includes('denied')) {
+        warningMessage = `${warningMessage} WEBCAM PERMISSION DENIED!`;
+      } else if (e.message === 'Requested device not found' || e.message === 'The object can not be found here.') {
+        warningMessage = `${warningMessage} YOUR DEVICE DOESN'T HAVE CAMERA SUPPORT!`;
+      } else {
+        warningMessage = `${warningMessage} ${e.message}`;
+      }
+
+      // NOTE: This is just a simple checker for the tracker mode and it should move to another space
+      setInterval(() => {
+        if (window.modeTracker === 'facetracker') {
+          element.innerHTML = warningMessage;
+        }
+      }, 1000);
+
+      reject(e);
     }
 
-    // NOTE: This is just a simple checker for the tracker mode and it should move to another space
-    setInterval(() => {
-      if (window.modeTracker === 'facetracker') {
-        element.innerHTML = warningMessage;
-      }
-    }, 1000);
-
-    return false;
-  }
-
-  video.onloadedmetadata = () => {
-    Promise.resolve(video);
-  };
-
-  return true;
+    video.onloadedmetadata = () => {
+      resolve(video);
+    };
+  })
 }
 
 async function renderPrediction() {
@@ -341,6 +404,7 @@ async function trackerMain() {
     const timer = setInterval(() => {
       progress.change(Player.progress); // update loading info
       if (Player.isReady()) {
+        console.log("Player is ready");
         clearInterval(timer);
         resolve();
       }
@@ -350,51 +414,12 @@ async function trackerMain() {
   info.innerHTML = progress.element;
   document.getElementById('main').style.display = 'none';
 
-  const [isSetupCamera] = await Promise.all([
-    setupCamera(),
-    waitingSounds(),
-    tf.ready(),
-  ]);
-
-  // disable all camera based handlers and settings
-  if (!isSetupCamera) {
-    info.innerHTML = '';
-    document.getElementById('main').style.display = '';
-
-    // enable all mods without facetracker part
-    return null;
-  }
-
-  videoWidth = video.videoWidth;
-  videoHeight = video.videoHeight;
-  video.width = videoWidth;
-  video.height = videoHeight;
-
-  canvas = document.getElementById('output');
-  canvas.width = videoWidth;
-  canvas.height = videoHeight;
-
-  // NOTE: This takes the first element by CSS class
-  // and after some changes on the HTML page this code can be broken
-  // FIXME: Need to use getElementsById
-  const canvasContainer = document.querySelector('.canvas-wrapper');
-  canvasContainer.style = `width: ${videoWidth}px; height: ${videoHeight}px`;
-
-  ctx = canvas.getContext('2d');
-  ctx.translate(canvas.width, 0);
-  ctx.scale(-1, 1);
-  ctx.fillStyle = '#32EEDB';
-  ctx.strokeStyle = '#32EEDB';
-
-  model = await facemesh.load({ maxFaces: 1 });
-  await renderPrediction();
+  isSetupCamera = false;
 
   // wait for loaded audio
   info.innerHTML = '';
   document.getElementById('main').style.display = '';
 
-  // NOTE: iOS fix; should be start after build, load and resize events
-  video.play();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -427,9 +452,10 @@ function Decode(yaw, pitch, roll) {
 
 // ------------------------
 // OSC Handling
+/*
 osc.open({
   port: 9898
-});
+});*/
 
 // ------------------------
 // Visual rendering adopted from https://threejs.org/examples/webgl_materials_normalmap.html
@@ -635,8 +661,10 @@ function animate() {
   document.getElementById('rotationPitch').value = pitch;
   document.getElementById('rotationYaw').value = yaw;
   document.getElementById('rotationRoll').value = roll;
+
   // Apply orientation to decode Mach1 Spatial to Stereo
   Decode(yaw, pitch, roll);
+
   // Apply orientation (yaw) to compass UI
   document.getElementById('compass').style.transform = `rotate(${yaw}deg)`;
 
@@ -678,8 +706,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 window.onerror = (event) => {
-  document.getElementById('progress:debug').innerHTML = `<p>Error: ${event}</p>`;
+  //document.getElementById('progress:debug').innerHTML = `<p>Error: ${event}</p>`;
 };
 window.addEventListener('unhandledrejection', (event) => {
-  document.getElementById('progress:debug').innerHTML = `<p>Error: ${event.reason}</p>`;
+  //document.getElementById('progress:debug').innerHTML = `<p>Error: ${event.reason}</p>`;
 });
