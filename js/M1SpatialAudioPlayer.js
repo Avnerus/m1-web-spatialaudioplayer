@@ -1,3 +1,5 @@
+//import { init3DTI } from './3dti.js'
+
 // ------------------------
 window.modeTracker = '';
 const videoOutput = document.getElementById('output');
@@ -46,11 +48,6 @@ const getAudioFiles = (files) => {
   return files.map((file) => `${path}/${file}.${extention}`);
 };
 
-const getAudioFilesNYT = (name, extension) => {
-  const path = `https://storage.googleapis.com/rd-big-files/Spatial-Audio/${name}`;
-
-  return [...Array(8).keys()].map((channel) => `${path}/${name}_${channel + 1}.${extension}`);
-};
 //const Player = new Mach1SoundPlayer(getAudioFiles(audioFilesNYTRD));
 
 const queryParams = new URLSearchParams(document.location.search);
@@ -62,8 +59,12 @@ if (queryParams.get('url')) {
 
 //const Player = new Mach1SoundPlayer(url ?? getAudioFilesNYT(NYTRDRemote, extension));
 const Player = new Mach1AudioPlayer(document.querySelector('audio'));
+let binauralListener = null;
+let binauralNode;
 
 console.log("Player created");
+
+binauralize(Player);
 
 const DecodeModule = new Mach1DecodeModule();
 const osc = new OSC();
@@ -74,6 +75,18 @@ if (typeof tf != 'undefined') {
 
 function radiansToDegrees(radians) {
   return radians * (180 / Math.PI);
+}
+
+function degressToRadians(degrees) {
+  return degrees * (Math.PI / 180);
+}
+
+async function binauralize(m1Player) {
+  const {listener, processorNode} = await init3DTI(m1Player.getAudioContext());
+  console.log("Binaurlize player", listener, processorNode);
+  
+  binauralNode = processorNode;
+  binauralListener = listener;
 }
 
 /*
@@ -213,6 +226,21 @@ async function selectTracker() {
         model = await facemesh.load({ maxFaces: 1 });
         await renderPrediction();
       }
+    }
+  }
+}
+
+function toggleBinaural() {
+  const value = document.querySelector('#binaural:checked');
+  
+  if (binauralNode) {
+    if (value) {
+      Player.outputNode.disconnect();
+      Player.outputNode.connect(binauralNode);
+      binauralNode.connect(Player.getAudioContext().destination);
+    } else {
+      binauralNode.disconnect();
+      Player.outputNode.connect(Player.getAudioContext().destination);
     }
   }
 }
@@ -664,6 +692,14 @@ function animate() {
 
   // Apply orientation to decode Mach1 Spatial to Stereo
   Decode(yaw, pitch, roll);
+
+  if (binauralListener) {
+    binauralListener.setOrientation(
+      degressToRadians(yaw),
+      degressToRadians(pitch),
+      degressToRadians(roll)
+    );
+  }
 
   // Apply orientation (yaw) to compass UI
   document.getElementById('compass').style.transform = `rotate(${yaw}deg)`;

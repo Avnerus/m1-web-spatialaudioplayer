@@ -14,6 +14,8 @@ class Mach1AudioPlayer { // eslint-disable-line no-unused-vars
   #isPlaying = false
   #isSoundReady = false
 
+  #audio
+
   #buffer
 
   #volume = 1.0
@@ -30,7 +32,7 @@ class Mach1AudioPlayer { // eslint-disable-line no-unused-vars
   #startTime = 0;
   #stopTime = 0;
 
-  NYT = true;
+  #mergerNode = null;
 
   /**
    * Private method which should calculate and return time before start playing,
@@ -68,6 +70,8 @@ class Mach1AudioPlayer { // eslint-disable-line no-unused-vars
    * @param {Array|AudioBuffer} input array with sound files paths [url]
    */
   constructor(input) {
+    this.#audio = input;
+
     const source = this.audioContext.createMediaElementSource(input);
     console.log("Source", source);
     const channels = 8;
@@ -75,7 +79,7 @@ class Mach1AudioPlayer { // eslint-disable-line no-unused-vars
     source.channelCount = channels;
 
     const splitter = this.audioContext.createChannelSplitter(channels);
-    const merger = this.audioContext.createChannelMerger(channels * 2);
+    this.#mergerNode = this.audioContext.createChannelMerger(channels * 2);
 
     source.connect(splitter);
     this.audioContext.createGain = this.audioContext.createGain || this.audioContext.createGainNode;
@@ -89,7 +93,7 @@ class Mach1AudioPlayer { // eslint-disable-line no-unused-vars
       const gain = this.audioContext.createGain();
       const panner = this.audioContext.createPanner();
 
-      gain.gain.value = 0;
+      gain.gain.value = 1;
 
       panner.setPosition(position, 0, 0);
       panner.panningModel = 'equalpower';
@@ -101,7 +105,7 @@ class Mach1AudioPlayer { // eslint-disable-line no-unused-vars
       splitter.connect(gain, channel);
 
       //console.log("Connect gain to merger from output index", 0, "to input ", position === -1 ? 0 : 1, "at merger" );
-      gain.connect(merger, 0, position === -1 ? 0 : 1);
+      gain.connect(this.#mergerNode, 0, position === -1 ? 0 : 1);
 
       //gain.connect(analyser);
 
@@ -115,7 +119,7 @@ class Mach1AudioPlayer { // eslint-disable-line no-unused-vars
 
     [...Array(8).keys()].forEach(processing);
 
-    merger.connect(this.audioContext.destination);
+    this.#mergerNode.connect(this.audioContext.destination);
 
   }
 
@@ -161,6 +165,10 @@ class Mach1AudioPlayer { // eslint-disable-line no-unused-vars
     return this.#volume;
   }
 
+  get outputNode() {
+    return this.#mergerNode;
+  }
+
   /**
    * Start playing sound files
    */
@@ -168,6 +176,7 @@ class Mach1AudioPlayer { // eslint-disable-line no-unused-vars
     if (this.isReady() && !this.#isPlaying && !this.#isDeleted) {
       this.#startTime = this.audioContext.currentTime - time;
       console.log("Resume audio context");
+      this.#audio.play();
       this.audioContext.resume();
       this.#isPlaying = true;
 
@@ -183,6 +192,7 @@ class Mach1AudioPlayer { // eslint-disable-line no-unused-vars
    */
   stop() {
     if (this.isReady() && this.#isPlaying && !this.#isDeleted) {
+      this.#audio.pause();
       this.#isPlaying = false;
       this.#needToPlay = false;
 
