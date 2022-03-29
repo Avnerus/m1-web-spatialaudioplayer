@@ -59,11 +59,12 @@ const init3DTI = async (audioContext) => {
 
   // Source position
   const tL = new toolkit.CTransform();
-  const vL = new toolkit.CVector3(-1,0,-0.15);
-  tL.SetPosition(vL);
+  const vL = new toolkit.CVector3(-0.5,0,-0.5);
 
   const tR = new toolkit.CTransform();
-  const vR = new toolkit.CVector3(1, 0,-0.15);
+  const vR = new toolkit.CVector3(0.5, 0,-0.5);
+
+  tL.SetPosition(vL);
   tR.SetPosition(vR);
 
   sourceL.SetSourceTransform(tL);
@@ -126,6 +127,16 @@ const init3DTI = async (audioContext) => {
 
   const setOrientation = (yaw, pitch, roll) => {
     const quat = toolkit.CQuaternion.FromYawPitchRoll(yaw, pitch, roll);
+
+    /*
+    let vLRotated = quat.RotateVector(vL);
+    let vRRotated = quat.RotateVector(vR);
+    tL.SetPosition(vLRotated);
+    tR.SetPosition(vRRotated);
+    sourceL.SetSourceTransform(tL);
+    sourceR.SetSourceTransform(tR);
+    */
+
     const transform = new toolkit.CTransform();
     transform.SetOrientation(quat);
     listener.SetListenerTransform(transform);
