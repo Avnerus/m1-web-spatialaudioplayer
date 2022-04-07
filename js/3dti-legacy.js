@@ -51,7 +51,6 @@ const registerHrtf = (toolkit, filename, data) => {
   return `/${filename}`
 }
 const init3DTI = async (audioContext) => {
-  /*
   const toolkit = await AudioToolkit();
   const binauralApi = new toolkit.BinauralAPI();
   const listener = binauralApi.CreateListener(0.08);
@@ -71,9 +70,13 @@ const init3DTI = async (audioContext) => {
   sourceL.SetSourceTransform(tL);
   sourceR.SetSourceTransform(tR);
 
+  // Fetch an HRTF file
+  const hrtfData= await fetchHrtfFile('/resources/3DTI_HRTF_IRC1053_512s_48000Hz.3dti-hrtf');
 
   console.log("HRTF Data", hrtfData);
 
+  // Register the HRTF file with
+  const virtualHrtfFilePath = registerHrtf(toolkit, 'dataset.3dti-hrtf', hrtfData)
 
     // Set the HRTF using the toolkit API.
   toolkit.HRTF_CreateFrom3dti(virtualHrtfFilePath, listener)
@@ -88,25 +91,19 @@ const init3DTI = async (audioContext) => {
   outputBuffersL.resize(1024, 0)
 
   const outputBuffersR = new toolkit.CStereoBuffer()
-  outputBuffersR.resize(1024, 0)*/
+  outputBuffersR.resize(1024, 0)
+
+  // Create a ScriptProcessorNode
+  const processorNode = audioContext.createScriptProcessor(512, 2, 2)
 
   // New method
-  // Fetch an HRTF file
 
-  await audioContext.audioWorklet.addModule('js/hrtf-processor.js')
-  const processorNode = new AudioWorkletNode(
-    audioContext, 
-    'hrtf-processor', 
-    { numberOfInputs: 6, outputChannelCount: [2]}
-  );
+  //await audioContext.audioWorklet.addModule('js/hrtf-processor.js')
+  //const randomNoiseNode = new AudioWorkletNode(audioContext, 'hrtf-processor')
 
-  const hrtfData = await fetchHrtfFile('/resources/3DTI_HRTF_IRC1053_512s_48000Hz.3dti-hrtf');
-
-  processorNode.port.postMessage(hrtfData);
 
   // Process audio in the processorNode's onaudioprocess
   // event callback
-  /*
   processorNode.onaudioprocess = audioProcessingEvent => {
     const { inputBuffer, outputBuffer } = audioProcessingEvent
 
@@ -126,10 +123,10 @@ const init3DTI = async (audioContext) => {
       outputBuffer.getChannelData(0)[i] = outputBuffersL.get(i * 2) + outputBuffersR.get(i * 2);
       outputBuffer.getChannelData(1)[i] = outputBuffersR.get(i * 2 + 1) + outputBuffersL.get(i * 2 + 1);
     }
-  };*/
+  };
 
   const setOrientation = (yaw, pitch, roll) => {
-    
+    const quat = toolkit.CQuaternion.FromYawPitchRoll(yaw, pitch, roll);
 
     /*
     let vLRotated = quat.RotateVector(vL);
@@ -140,7 +137,9 @@ const init3DTI = async (audioContext) => {
     sourceR.SetSourceTransform(tR);
     */
 
-    processorNode.port.postMessage({yaw, pitch, roll})
+    const transform = new toolkit.CTransform();
+    transform.SetOrientation(quat);
+    listener.SetListenerTransform(transform);
   };
 
   return {

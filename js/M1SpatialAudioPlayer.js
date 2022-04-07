@@ -58,13 +58,21 @@ if (queryParams.get('url')) {
 }
 
 //const Player = new Mach1SoundPlayer(url ?? getAudioFilesNYT(NYTRDRemote, extension));
-const Player = new Mach1AudioPlayer(document.querySelector('audio'));
+const Player = new Mach1AudioPlayer(document.querySelector('#media-mach1'));
+Player.init();
+
+let binauralActive = false;
 let binauralListener = null;
 let binauralNode;
 
+let hoast360 = undefined;
+
 console.log("Player created");
 
-binauralize(Player);
+//binauralize(Player);
+Player.outputNode.connect(Player.getAudioContext().destination);
+
+hoast360 = ambisonics(Player.getAudioContext(), document.querySelector('#media-ambix'));
 
 const DecodeModule = new Mach1DecodeModule();
 const osc = new OSC();
@@ -87,6 +95,10 @@ async function binauralize(m1Player) {
   
   binauralNode = processorNode;
   binauralListener = listener;
+}
+
+async function ambisonics(audioContext, audioElement) {
+  hoast360 = await initHOAST360(audioContext, audioElement)
 }
 
 /*
@@ -230,17 +242,26 @@ async function selectTracker() {
   }
 }
 
-function toggleBinaural() {
+async function toggleBinaural() {
   const value = document.querySelector('#binaural:checked');
+  binauralActive = !binauralActive;
+
+  if (binauralActive && !binauralNode) {
+    await binauralize(Player);     
+  }
   
   if (binauralNode) {
+    console.log("Toggle binaural");
     if (value) {
+      Player.splitterNode.disconnect();
       Player.outputNode.disconnect();
-      Player.outputNode.connect(binauralNode);
+      for (let i = 0; i < binauralNode.numberOfInputs; i++) {
+        Player.splitterNode.connect(binauralNode, i, i);
+      }
       binauralNode.connect(Player.getAudioContext().destination);
     } else {
       binauralNode.disconnect();
-      Player.outputNode.connect(Player.getAudioContext().destination);
+      Player.init();
     }
   }
 }
@@ -691,14 +712,19 @@ function animate() {
   document.getElementById('rotationRoll').value = roll;
 
   // Apply orientation to decode Mach1 Spatial to Stereo
-  Decode(yaw, pitch, roll);
-
-  if (binauralListener) {
+  if (!binauralActive) {
+    Decode(yaw, pitch, roll);
+  }
+  else if (binauralListener) {
     binauralListener.setOrientation(
       degressToRadians(yaw),
       degressToRadians(pitch),
       degressToRadians(roll)
     );
+  }
+
+  if (hoast360 && hoast360.setOrientation) {
+    hoast360.setOrientation(-yaw, pitch, roll);
   }
 
   // Apply orientation (yaw) to compass UI

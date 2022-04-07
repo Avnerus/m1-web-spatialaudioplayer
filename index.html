@@ -33,6 +33,9 @@
         <script src="js/Mach1SoundPlayer/Mach1AudioPlayer.js"></script>
         <script src="js/Mach1SoundPlayer/Mach1SoundPlayer.js"></script>
         <script src="js/Mach1Decode.js"></script>
+        <!--script src="js/3dti-toolkit.js"></script-->
+        <script src="js/3dti.js"></script>
+        <script src="js/hoast360-player.js"></script>
 
         <style type="text/css">
             @font-face {
@@ -345,10 +348,18 @@
               height: 100%;
               z-index: -1;
             }
+
+            #binaural {
+              position: relative;
+              top: 158px;
+              width: 30px;
+            }
         </style>
     </head>
     <body>
-        <audio crossorigin="anonymous" id="media" src="https://storage.googleapis.com/rd-big-files/Spatial-Audio/20210920_DixieFire_ATMOS_V5_mach1.wav">
+        <audio crossorigin="anonymous" id="media-mach1" src="https://storage.googleapis.com/rd-big-files/Spatial-Audio/20210920_DixieFire_ATMOS_V5_mach1.wav">
+        </audio>
+        <audio crossorigin="anonymous" id="media-ambix" src="https://storage.googleapis.com/rd-big-files/Spatial-Audio/20210920_DixieFire_ATMOS_V5_AmbiX.wav">
         </audio>
         <div id="main" style="display:none;">
             <div class="containerOuter" style="position:absolute; top:20px; left:30px;">
@@ -362,6 +373,9 @@
 
                 <input type="radio" name="mode" id="radio1" class="hidden" value="facetracker" onclick="selectTracker()">
                 <label class="entry" for="radio1"><div class="circle"></div><div class="entry-label">Facetracker</div></label>
+
+                <input type="checkbox" name="binaural" id="binaural" autocomplete="off" onclick="toggleBinaural()">
+                <label class="entry" for="binaural"><div class="entry-label">Binaural</div></label>
 
                 <!--input type="radio" name="mode" id="radio4" class="hidden" value="bosear" onclick="selectTracker()" >
                 <label class="entry" for="radio4"><div class="circle"></div><div class="entry-label" style="margin-top:-3px;">BoseAR&nbsp;<bose-ar-device></bose-ar-device></div></label-->
@@ -383,9 +397,17 @@
             </svg>
             <div class="containerOuter" style="position: absolute; top: 20px; left: 240px;">
                 <div class="containerInner">
+                    <div>Mach1</div>
                     <button onclick="play()" class="button">Play</button>
                     <button onclick="stop()" class="button">Stop</button>
                     <button onclick="DisplayDebug()" class="button">Debug</button>
+                </div>
+            </div>
+            <div class="containerOuter" style="position: absolute; top: 20px; left: 480px;">
+                <div class="containerInner">
+                    <div>AmbiX</div>
+                    <button onclick="playAmbiX()" class="button">Play</button>
+                    <button onclick="stopAmbiX()" class="button">Stop</button>
                 </div>
             </div>
             <div id="bosearstats" class="containerOuter" style="display: none; position: absolute; top: 20px; left: 450px;">
@@ -442,15 +464,21 @@
         <script>
           function play() {
             if (Player.NYT) {
-                document.querySelector('audio').play();
+                document.querySelector('#media-mach1').play();
             }
             Player.play();
           }
           function stop() {
             if (Player.NYT) {
-                document.querySelector('audio').pause();
+                document.querySelector('#media-mach1').pause();
             }
             Player.stop();
+          }
+          function playAmbiX() {
+            document.querySelector('#media-ambix').play();
+          }
+          function stopAmbiX() {
+            document.querySelector('#media-ambix').pause();
           }
         </script>
 

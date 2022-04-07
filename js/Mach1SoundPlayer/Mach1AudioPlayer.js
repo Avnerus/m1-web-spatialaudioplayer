@@ -33,6 +33,7 @@ class Mach1AudioPlayer { // eslint-disable-line no-unused-vars
   #stopTime = 0;
 
   #mergerNode = null;
+  #splitterNode = null;
 
   /**
    * Private method which should calculate and return time before start playing,
@@ -78,12 +79,16 @@ class Mach1AudioPlayer { // eslint-disable-line no-unused-vars
 
     source.channelCount = channels;
 
-    const splitter = this.audioContext.createChannelSplitter(channels);
+    this.#splitterNode = this.audioContext.createChannelSplitter(channels);
     this.#mergerNode = this.audioContext.createChannelMerger(channels * 2);
 
-    source.connect(splitter);
+    source.connect(this.#splitterNode);
+
     this.audioContext.createGain = this.audioContext.createGain || this.audioContext.createGainNode;
 
+  }
+
+  init() {
     this.#gainNode = [];
     this.#gainAnalyser = [];
 
@@ -102,7 +107,7 @@ class Mach1AudioPlayer { // eslint-disable-line no-unused-vars
       panner.connect(gain);
 
       //console.log("Connect spliiter to gain from output", channel);
-      splitter.connect(gain, channel);
+      this.#splitterNode.connect(gain, channel);
 
       //console.log("Connect gain to merger from output index", 0, "to input ", position === -1 ? 0 : 1, "at merger" );
       gain.connect(this.#mergerNode, 0, position === -1 ? 0 : 1);
@@ -120,7 +125,6 @@ class Mach1AudioPlayer { // eslint-disable-line no-unused-vars
     [...Array(8).keys()].forEach(processing);
 
     this.#mergerNode.connect(this.audioContext.destination);
-
   }
 
   /**
@@ -167,6 +171,10 @@ class Mach1AudioPlayer { // eslint-disable-line no-unused-vars
 
   get outputNode() {
     return this.#mergerNode;
+  }
+
+  get splitterNode() {
+    return this.#splitterNode;
   }
 
   /**
