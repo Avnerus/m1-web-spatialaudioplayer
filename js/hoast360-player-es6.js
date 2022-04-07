@@ -3,7 +3,9 @@ import MatrixMultiplier from 'hoast360/dependencies/MatrixMultiplier.js'
 import HOASTBinDecoder from 'hoast360/dependencies/HoastBinauralDecoder.js'
 import HOASTloader from 'hoast360/dependencies/HoastLoader.js'
 
-window.initHOAST360 = async (audioContext, audioElement) => {
+console.log("HELLO HOAST!");
+
+const initHOAST360 = async (audioContext, audioElement) => {
   
   return new Promise((resolve, reject) => {
     console.log("Init HOAST360");
@@ -17,7 +19,7 @@ window.initHOAST360 = async (audioContext, audioElement) => {
     const multiplier = new MatrixMultiplier(audioContext, 4);
     console.log(multiplier);
 
-    decoder = new HOASTBinDecoder(audioContext, order);
+    const decoder = new HOASTBinDecoder(audioContext, order);
     console.log(decoder);
 
     const masterGain = audioContext.createGain();
@@ -50,3 +52,5 @@ window.initHOAST360 = async (audioContext, audioElement) => {
     loader_filters.load();
   })
 };
+
+export { initHOAST360 }

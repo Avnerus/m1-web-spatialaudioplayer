@@ -1,14 +1,18 @@
 {
-  "name": "rd-mach1-demo",
+  "name": "mach1-experiments",
   "version": "1.0.0",
   "description": "## Demos List of already deployed demos utilizing concepts of Mach1 Spatial and facetracking  - [Dual Layer Mach1Spatial](https://player.mach1.tech/demo/dual-layer/M1SpatialAudioPlayer.html) (Branch: [/demo-example/dual-layer](https://github.com/Mach1Studios/m1-web-spatialaudioplayer/tree/demo-example/dual-layer-m1spatial))  - [Mach1Spatial + Stereo Object](https://player.mach1.tech/demo/stereo-object/M1SpatialAudioPlayer.html) (Branch: [/demo-example/depth-object](https://github.com/Mach1Studios/m1-web-spatialaudioplayer/tree/demo-example/depth-object))  - [Content Demos](https://demos.mach1.tech)",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "vite"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "hoast360": "^1.0.1"
+  },
+  "devDependencies": {
+    "vite": "^2.9.1"
   }
 }

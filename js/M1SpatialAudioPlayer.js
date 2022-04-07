@@ -1,4 +1,5 @@
-//import { init3DTI } from './3dti.js'
+import { initHOAST360 } from './hoast360-player-es6.js'
+import { init3DTI } from './3dti.js'
 
 // ------------------------
 window.modeTracker = '';
@@ -59,6 +60,8 @@ if (queryParams.get('url')) {
 
 //const Player = new Mach1SoundPlayer(url ?? getAudioFilesNYT(NYTRDRemote, extension));
 const Player = new Mach1AudioPlayer(document.querySelector('#media-mach1'));
+window.Player = Player;
+
 Player.init();
 
 let binauralActive = false;
@@ -75,7 +78,7 @@ Player.outputNode.connect(Player.getAudioContext().destination);
 hoast360 = ambisonics(Player.getAudioContext(), document.querySelector('#media-ambix'));
 
 const DecodeModule = new Mach1DecodeModule();
-const osc = new OSC();
+//const osc = new OSC();
 
 if (typeof tf != 'undefined') {
   tf.setBackend('webgl');
@@ -265,6 +268,8 @@ async function toggleBinaural() {
     }
   }
 }
+
+window.toggleBinaural = toggleBinaural;
 
 function enableBoseAR() {
   const ele = document.getElementById('boseRate');
@@ -732,7 +737,7 @@ function animate() {
 
   // Check and reconnect OSC
   // Apply orientation as output OSC messages
-  if (osc.status() === OSC.STATUS.IS_OPEN) {
+  //if (osc.status() === OSC.STATUS.IS_OPEN) {
     /**
      * Receive OSC message with address "/orientation" and three float arguements
      * Yaw (left -> right | where rotating left is negative)
@@ -741,13 +746,14 @@ function animate() {
      *
      * @type {Class}
      */
+  /*
     osc.send(new OSC.Message('/orientation', yaw, pitch, roll));
   } else if (osc.status() === OSC.STATUS.IS_CLOSED) {
     osc.open({
       // TODO: custom port output
       port: 9898
     });
-  }
+  }*/
 }
 
 // eslint-disable-next-line

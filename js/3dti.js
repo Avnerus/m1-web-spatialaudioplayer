@@ -1,3 +1,5 @@
+import processorUrl from "./hrtf-processor-es6.js?url";
+
 /**
  * Fetches an HRTF file and returns it as an array buffer.
  *
@@ -93,7 +95,9 @@ const init3DTI = async (audioContext) => {
   // New method
   // Fetch an HRTF file
 
-  await audioContext.audioWorklet.addModule('js/hrtf-processor.js')
+  console.log("Processor URL", processorUrl)
+
+  await audioContext.audioWorklet.addModule(processorUrl)
   const processorNode = new AudioWorkletNode(
     audioContext, 
     'hrtf-processor', 
@@ -150,3 +154,5 @@ const init3DTI = async (audioContext) => {
     processorNode
   }
 };
+
+export { init3DTI };
