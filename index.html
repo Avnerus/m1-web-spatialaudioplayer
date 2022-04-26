@@ -3,6 +3,7 @@
     <head>
         <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
         <meta content="utf-8" http-equiv="encoding" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
         <!-- Loading / Progress Bar -->
         <link rel="preload" href="img/spinner.svg" as="image">
@@ -26,7 +27,7 @@
         <script src="js/three.js/postprocessing/ShaderPass.js"></script>
         <script src="js/three.js/shaders/CopyShader.js"></script>
 
-        <!--script src="js/osc.min.js"></script-->
+        <script src="js/osc.min.js"></script>
         <script src="js/1euro.js"></script>
         <script src="js/Gimbal.js"></script>
 
@@ -96,7 +97,7 @@
                 align-items: center;
                 justify-content: center;
 
-                padding-top: 41vh;
+                padding-top: 80vh;
             }
             #modelview {
               padding-top: 5vh;
@@ -351,6 +352,28 @@
               top: 158px;
               width: 30px;
             }
+            #gui-container { 
+              position: absolute;
+              top: 33vh;
+              left: 33vw;
+            }
+            #touchstats {
+              top: 100%;
+            }
+            @media only screen and (min-width: 768px) {
+                  #gui-container { 
+                    left: 80vw;
+                    top: 0;
+                  }
+                  #compassContainer{
+                    padding-top: 41vh;
+                  }
+                  #touchstats { 
+                    top: 50%;
+                  }
+            }
+
+            
         </style>
     </head>
     <body>
@@ -400,7 +423,7 @@
                     <button onclick="DisplayDebug()" class="button">Debug</button>
                 </div>
             </div>
-            <div class="containerOuter" style="position: absolute; top: 20px; left: 480px;">
+            <div class="containerOuter" style="position: absolute; top: 20px; left: 450px;">
                 <div class="containerInner">
                     <div>AmbiX</div>
                     <button onclick="playAmbiX()" class="button">Play</button>
@@ -429,13 +452,15 @@
                     </form>
                 </div>
             </div>
-            <div id="touchstats" style="display:none;margin:0;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:50vw;height:auto;">
+            <div id="touchstats" style="display:none;margin:0;position:absolute;left:50%;transform:translate(-50%,-50%);width:50vw;height:auto;">
               <div class="background"><img src="img/touch-compass.svg" style="width:50vw;height:auto;"/></div>
               <div class="cardBottom">
                 <div class="card"> 
                   <div class="txt">FRONT</div>
                 </div>
               </div>
+            </div>
+            <div class="container" id="gui-container">
             </div>
             <div class="container">
                 <div id="compassContainer">
